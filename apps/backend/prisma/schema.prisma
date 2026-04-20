@@ -1,0 +1,372 @@
+// Prisma schema for RumaCare
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------- Enums --------------------
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+  WORKER
+}
+
+enum CategoryCode {
+  PERSONAL_NURSING
+  CLEANING
+  NANNY
+  TUITION
+  HOME_SERVICES
+  PARTNER
+}
+
+enum RateModel {
+  HOURLY
+  HALF_OR_FULL_DAY
+  PER_SUBJECT
+  PACKAGE
+  FIXED_WORKER_FEE
+}
+
+enum TimeSlot {
+  AM
+  PM
+  EVENING
+  FULL_DAY
+}
+
+enum BookingStatus {
+  PENDING_DISPATCH
+  OFFERED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  UNASSIGNED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  RECALLED
+  EXPIRED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  RENEWAL_PROMPTED
+  RENEWED
+  CANCELLED
+  COMPLETED
+}
+
+enum PartnerApplicationStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum PaymentKind {
+  CUSTOMER_CHARGE
+  WORKER_PAYOUT
+  WORKER_CONTACT_VIEW_FEE
+}
+
+// -------------------- Models --------------------
+
+model User {
+  id        String   @id @default(uuid())
+  role      UserRole
+  email     String   @unique
+  phone     String?  @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customerBookings     Booking[]               @relation("CustomerBookings")
+  workerBookings       Booking[]               @relation("WorkerBookings")
+  ratingsGiven         Rating[]                @relation("RatingsByCustomer")
+  workerProfile        WorkerProfile?
+  customerSubs         RecurringSubscription[] @relation("CustomerSubs")
+  workerSubs           RecurringSubscription[] @relation("WorkerSubs")
+  partnerApplication   PartnerApplication?
+  offers               BookingOffer[]
+  tutorChangeRequests  TutorChangeRequest[]
+  homeServiceListings  HomeServiceListing[]
+  homeServiceViewsBy   HomeServiceContactView[] @relation("ContactViewsByCustomer")
+  homeServiceViewsFor  HomeServiceContactView[] @relation("ContactViewsForWorker")
+  payments             Payment[]
+}
+
+model WorkerProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  autoAccept      Boolean   @default(false)
+  preferredPartner Boolean  @default(false)
+  averageRating   Float     @default(0)
+  ratingCount     Int       @default(0)
+  currentLat      Float?
+  currentLng      Float?
+  baseLat         Float?
+  baseLng         Float?
+  categories      WorkerCategory[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model WorkerCategory {
+  id              String        @id @default(uuid())
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  categoryCode    CategoryCode
+  subjectIds      String[]      @default([])
+  homeServiceCategoryId String?
+  homeServiceCategory   HomeServiceCategory? @relation(fields: [homeServiceCategoryId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@unique([workerProfileId, categoryCode, homeServiceCategoryId])
+}
+
+model ServiceCategory {
+  code         CategoryCode  @id
+  order        Int
+  name         String
+  description  String
+  bookable     Boolean
+  hasServiceTypes Boolean
+  isDirectory  Boolean
+  serviceTypes ServiceType[]
+}
+
+model ServiceType {
+  id               String          @id @default(uuid())
+  categoryCode     CategoryCode
+  category         ServiceCategory @relation(fields: [categoryCode], references: [code])
+  code             String          @unique
+  name             String
+  rateModel        RateModel
+  hourlyRate       Int?
+  rateAmSlot       Int?
+  ratePmSlot       Int?
+  rateEveningSlot  Int?
+  rateFullDay      Int?
+  workerFeePerView Int?
+  discountEnabled  Boolean         @default(false)
+  discountPercent  Int             @default(10)
+  enabled          Boolean         @default(true)
+  bookings         Booking[]
+  subscriptions    RecurringSubscription[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  rate      Int      // monthly rate in sen for a single-subject tuition
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HomeServiceCategory {
+  id             String                @id @default(uuid())
+  name           String                @unique
+  enabled        Boolean               @default(true)
+  workerFeePerView Int                 @default(500) // sen (MYR 5.00)
+  listings       HomeServiceListing[]
+  workerCategories WorkerCategory[]
+  contactViews   HomeServiceContactView[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+}
+
+model HomeServiceListing {
+  id              String               @id @default(uuid())
+  workerId        String
+  worker          User                 @relation(fields: [workerId], references: [id])
+  homeServiceCategoryId String
+  homeServiceCategory HomeServiceCategory @relation(fields: [homeServiceCategoryId], references: [id])
+  description     String
+  phone           String
+  averageRating   Float                @default(0)
+  ratingCount     Int                  @default(0)
+  preferredPartner Boolean             @default(false)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([workerId, homeServiceCategoryId])
+}
+
+model HomeServiceContactView {
+  id                    String   @id @default(uuid())
+  homeServiceCategoryId String
+  homeServiceCategory   HomeServiceCategory @relation(fields: [homeServiceCategoryId], references: [id])
+  customerId            String
+  customer              User     @relation("ContactViewsByCustomer", fields: [customerId], references: [id])
+  workerId              String
+  worker                User     @relation("ContactViewsForWorker", fields: [workerId], references: [id])
+  feeCharged            Int
+  createdAt             DateTime @default(now())
+}
+
+model Booking {
+  id                      String           @id @default(uuid())
+  categoryCode            CategoryCode
+  serviceTypeId           String
+  serviceType             ServiceType      @relation(fields: [serviceTypeId], references: [id])
+  customerId              String
+  customer                User             @relation("CustomerBookings", fields: [customerId], references: [id])
+  workerId                String?
+  worker                  User?            @relation("WorkerBookings", fields: [workerId], references: [id])
+  status                  BookingStatus    @default(PENDING_DISPATCH)
+  scheduledFor            DateTime
+  slot                    TimeSlot?
+  durationHours           Int?
+  lat                     Float
+  lng                     Float
+  address                 String
+  notes                   String?
+  totalAmount             Int              @default(0)
+  workerAmount            Int              @default(0)
+  adminAmount             Int              @default(0)
+  multiplierApplied       Float            @default(1.0)
+  discountPercent         Int              @default(0)
+  recurringSubscriptionId String?
+  recurringSubscription   RecurringSubscription? @relation(fields: [recurringSubscriptionId], references: [id])
+  offers                  BookingOffer[]
+  rating                  Rating?
+  tutorChangeRequest      TutorChangeRequest?
+  payments                Payment[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+}
+
+model BookingOffer {
+  id         String      @id @default(uuid())
+  bookingId  String
+  booking    Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  workerId   String
+  worker     User        @relation(fields: [workerId], references: [id])
+  status     OfferStatus @default(PENDING)
+  distanceKm Float
+  expiresAt  DateTime
+  respondedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@unique([bookingId, workerId])
+  @@index([workerId, status])
+}
+
+model RecurringSubscription {
+  id               String             @id @default(uuid())
+  categoryCode     CategoryCode
+  customerId       String
+  customer         User               @relation("CustomerSubs", fields: [customerId], references: [id])
+  workerId         String?
+  worker           User?              @relation("WorkerSubs", fields: [workerId], references: [id])
+  serviceTypeId    String
+  serviceType      ServiceType        @relation(fields: [serviceTypeId], references: [id])
+  subjectIds       String[]           @default([])
+  status           SubscriptionStatus @default(ACTIVE)
+  startDate        DateTime
+  endDate          DateTime
+  renewalPromptAt  DateTime
+  discountPercent  Int                @default(0)
+  weekdays         Int[]              @default([]) // 0-6, Sun-Sat
+  lat              Float
+  lng              Float
+  address          String
+  bookings         Booking[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  bookingId  String   @unique
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  customerId String
+  customer   User     @relation("RatingsByCustomer", fields: [customerId], references: [id])
+  workerId   String
+  stars      Int
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+model TutorChangeRequest {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id])
+  subscriptionId String?
+  bookingId  String?  @unique
+  booking    Booking? @relation(fields: [bookingId], references: [id])
+  reason     String?
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model PartnerApplication {
+  id                String                   @id @default(uuid())
+  userId            String                   @unique
+  user              User                     @relation(fields: [userId], references: [id])
+  status            PartnerApplicationStatus @default(DRAFT)
+  categories        CategoryCode[]
+  fullName          String
+  icNumber          String
+  addressLine       String
+  bankName          String
+  bankAccountNumber String
+  ssmNumber         String?
+  nursingCertUrl    String?
+  icCopyUrl         String
+  selfieUrl         String
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+}
+
+model Payment {
+  id         String      @id @default(uuid())
+  bookingId  String?
+  booking    Booking?    @relation(fields: [bookingId], references: [id])
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  kind       PaymentKind
+  amount     Int
+  currency   String      @default("MYR")
+  note       String?
+  createdAt  DateTime    @default(now())
+}
+
+model Settings {
+  id                        Int    @id @default(1)
+  revenueSplitWorkerPercent Int    @default(80)
+  multiplierSat             Float  @default(1.5)
+  multiplierSun             Float  @default(1.5)
+  multiplierPublicHoliday   Float  @default(2.0)
+  defaultCurrency           String @default("MYR")
+  broadcastFanout           Int    @default(5)
+  offerTimeoutMinutes       Int    @default(3)
+  renewalPromptAfterDays    Int    @default(14)
+  defaultDiscountPercent    Int    @default(10)
+  updatedAt                 DateTime @updatedAt
+}
+
+model PublicHoliday {
+  id   String   @id @default(uuid())
+  date DateTime @unique
+  name String
+}

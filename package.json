@@ -1,0 +1,25 @@
+{
+  "name": "rumacare",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/** --filter=./apps/backend --filter=./apps/admin-web build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "dev:backend": "pnpm --filter @rumacare/backend dev",
+    "dev:admin": "pnpm --filter @rumacare/admin-web dev",
+    "dev:customer": "pnpm --filter @rumacare/customer-app start",
+    "dev:worker": "pnpm --filter @rumacare/worker-app start",
+    "db:generate": "pnpm --filter @rumacare/backend prisma:generate",
+    "db:migrate": "pnpm --filter @rumacare/backend prisma:migrate",
+    "db:seed": "pnpm --filter @rumacare/backend db:seed"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}
