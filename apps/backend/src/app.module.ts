@@ -13,6 +13,8 @@ import { OffersModule } from "./modules/offers/offers.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { WorkersModule } from "./modules/workers/workers.module";
 import { HealthModule } from "./modules/health/health.module";
+import { PublicHolidaysModule } from "./modules/public-holidays/public-holidays.module";
+import { CronModule } from "./modules/cron/cron.module";
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { HealthModule } from "./modules/health/health.module";
     SubscriptionsModule,
     WorkersModule,
     HealthModule,
+    PublicHolidaysModule,
+    CronModule,
   ],
 })
 export class AppModule {}

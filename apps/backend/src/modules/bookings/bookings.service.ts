@@ -36,8 +36,10 @@ export class BookingsService {
       throw new BadRequestException("Service type is disabled");
     }
     const settings = await this.settings.get();
+    const d = input.scheduledFor;
+    const dateOnly = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const holiday = await this.prisma.publicHoliday.findUnique({
-      where: { date: new Date(input.scheduledFor.toDateString()) },
+      where: { date: dateOnly },
     });
     const price = computePrice({
       serviceType,

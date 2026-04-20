@@ -9,6 +9,7 @@ import {
   DEFAULT_SUBJECTS,
   DEFAULT_HOME_SERVICES,
   DEFAULT_SETTINGS,
+  MY_PUBLIC_HOLIDAYS,
 } from "@rumacare/shared";
 
 const prisma = new PrismaClient();
@@ -104,6 +105,17 @@ async function main() {
       where: { name: subject },
       update: {},
       create: { name: subject, rate: 15000, enabled: true },
+    });
+  }
+
+  // Public holidays (federal MY)
+  for (const h of MY_PUBLIC_HOLIDAYS) {
+    const [y, m, d] = h.date.split("-").map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    await prisma.publicHoliday.upsert({
+      where: { date },
+      update: { name: h.name },
+      create: { date, name: h.name },
     });
   }
 

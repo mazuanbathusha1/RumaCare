@@ -20,6 +20,7 @@
     "@nestjs/core": "10.3.9",
     "@nestjs/jwt": "10.2.0",
     "@nestjs/platform-express": "10.3.9",
+    "@nestjs/schedule": "4.0.2",
     "@prisma/client": "5.14.0",
     "@rumacare/shared": "workspace:*",
     "argon2": "0.40.3",

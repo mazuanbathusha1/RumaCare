@@ -27,6 +27,10 @@ export default function HomePage() {
           <h3>Settings</h3>
           <p>Revenue split, weekend &amp; PH multipliers, dispatch defaults.</p>
         </Link>
+        <Link href="/public-holidays" className="card">
+          <h3>Public Holidays</h3>
+          <p>Manage Malaysia public holidays used by the PH multiplier.</p>
+        </Link>
       </div>
     </div>
   );
