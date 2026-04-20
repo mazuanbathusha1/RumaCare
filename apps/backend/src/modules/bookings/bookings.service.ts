@@ -3,6 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 import { ServiceTypesService } from "../service-types/service-types.service";
 import { DispatcherService } from "./dispatcher.service";
+import { PaymentsService } from "../payments/payments.service";
 import { computePrice } from "./pricing";
 import type { CategoryCode, TimeSlot } from "@rumacare/shared";
 
@@ -28,6 +29,7 @@ export class BookingsService {
     private readonly settings: SettingsService,
     private readonly serviceTypes: ServiceTypesService,
     private readonly dispatcher: DispatcherService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async create(input: CreateBookingInput) {
@@ -111,22 +113,7 @@ export class BookingsService {
       where: { id },
       data: { status: "COMPLETED" },
     });
-    await this.prisma.payment.createMany({
-      data: [
-        {
-          bookingId: id,
-          userId: booking.customerId,
-          kind: "CUSTOMER_CHARGE",
-          amount: booking.totalAmount,
-        },
-        {
-          bookingId: id,
-          userId: workerId,
-          kind: "WORKER_PAYOUT",
-          amount: booking.workerAmount,
-        },
-      ],
-    });
+    await this.payments.recordWorkerPayout(id, workerId, booking.workerAmount);
     return updated;
   }
 
