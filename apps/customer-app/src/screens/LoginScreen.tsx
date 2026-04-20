@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { api, setToken } from "../api";
+import { registerForPushNotificationsAsync } from "../push";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 
@@ -37,6 +38,7 @@ export default function LoginScreen({ navigation }: Props) {
         });
         await setToken(res.token);
       }
+      registerForPushNotificationsAsync().catch(() => undefined);
       navigation.replace("Home");
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed");

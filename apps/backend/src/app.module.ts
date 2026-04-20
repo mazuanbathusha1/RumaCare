@@ -15,6 +15,7 @@ import { WorkersModule } from "./modules/workers/workers.module";
 import { HealthModule } from "./modules/health/health.module";
 import { PublicHolidaysModule } from "./modules/public-holidays/public-holidays.module";
 import { CronModule } from "./modules/cron/cron.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CronModule } from "./modules/cron/cron.module";
     WorkersModule,
     HealthModule,
     PublicHolidaysModule,
+    NotificationsModule,
     CronModule,
   ],
 })

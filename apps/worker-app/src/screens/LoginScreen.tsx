@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { WorkerStackParamList } from "../App";
 import { api, setToken } from "../api";
+import { registerForPushNotificationsAsync } from "../push";
 
 type Props = NativeStackScreenProps<WorkerStackParamList, "Login">;
 
@@ -28,6 +29,7 @@ export default function LoginScreen({ navigation }: Props) {
         body: JSON.stringify(body),
       });
       await setToken(res.token);
+      registerForPushNotificationsAsync().catch(() => undefined);
       navigation.replace(mode === "login" ? "Dashboard" : "RegisterPartner");
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed");
