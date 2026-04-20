@@ -34,9 +34,19 @@ export default function SettingsPage() {
     setBusy(true);
     setMsg(null);
     try {
+      const payload: Settings = {
+        revenueSplitWorkerPercent: settings.revenueSplitWorkerPercent,
+        multiplierSat: settings.multiplierSat,
+        multiplierSun: settings.multiplierSun,
+        multiplierPublicHoliday: settings.multiplierPublicHoliday,
+        broadcastFanout: settings.broadcastFanout,
+        offerTimeoutMinutes: settings.offerTimeoutMinutes,
+        renewalPromptAfterDays: settings.renewalPromptAfterDays,
+        defaultDiscountPercent: settings.defaultDiscountPercent,
+      };
       await api("/settings", {
         method: "PATCH",
-        body: JSON.stringify(settings),
+        body: JSON.stringify(payload),
       });
       setMsg("Saved.");
     } catch (e) {
