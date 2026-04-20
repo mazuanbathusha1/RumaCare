@@ -21,6 +21,8 @@
     "@nestjs/jwt": "10.2.0",
     "@nestjs/platform-express": "10.3.9",
     "@nestjs/schedule": "4.0.2",
+    "@aws-sdk/client-s3": "3.614.0",
+    "@aws-sdk/s3-request-presigner": "3.614.0",
     "@prisma/client": "5.14.0",
     "@rumacare/shared": "workspace:*",
     "argon2": "0.40.3",

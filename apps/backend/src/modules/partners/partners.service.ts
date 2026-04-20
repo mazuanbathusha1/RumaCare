@@ -70,6 +70,12 @@ export class PartnersService {
     });
   }
 
+  async get(id: string) {
+    const app = await this.prisma.partnerApplication.findUnique({ where: { id } });
+    if (!app) throw new NotFoundException("Application not found");
+    return app;
+  }
+
   list(status?: PartnerApplicationStatus) {
     return this.prisma.partnerApplication.findMany({
       where: status ? { status } : undefined,
