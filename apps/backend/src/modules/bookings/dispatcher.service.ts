@@ -155,7 +155,7 @@ export class DispatcherService {
     }
 
     await this.prisma.bookingOffer.updateMany({
-      where: { id: { in: stale.map((o) => o.id) } },
+      where: { id: { in: stale.map((o) => o.id) }, status: "PENDING" },
       data: { status: "EXPIRED", respondedAt: now },
     });
 
