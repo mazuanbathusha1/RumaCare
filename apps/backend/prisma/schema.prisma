@@ -80,6 +80,18 @@ enum PaymentKind {
   WORKER_CONTACT_VIEW_FEE
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  IPAY88
+  MANUAL
+}
+
 // -------------------- Models --------------------
 
 model User {
@@ -352,16 +364,25 @@ model PartnerApplication {
 }
 
 model Payment {
-  id         String      @id @default(uuid())
+  id         String          @id @default(uuid())
   bookingId  String?
-  booking    Booking?    @relation(fields: [bookingId], references: [id])
+  booking    Booking?        @relation(fields: [bookingId], references: [id])
   userId     String
-  user       User        @relation(fields: [userId], references: [id])
+  user       User            @relation(fields: [userId], references: [id])
   kind       PaymentKind
   amount     Int
-  currency   String      @default("MYR")
+  currency   String          @default("MYR")
   note       String?
-  createdAt  DateTime    @default(now())
+  provider   PaymentProvider @default(MANUAL)
+  status     PaymentStatus   @default(SUCCEEDED)
+  referenceNo String?        @unique
+  externalTransId String?
+  rawResponse Json?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt @default(now())
+
+  @@index([bookingId])
+  @@index([userId, kind])
 }
 
 model Settings {

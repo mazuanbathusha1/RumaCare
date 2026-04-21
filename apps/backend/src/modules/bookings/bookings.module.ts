@@ -6,9 +6,10 @@ import { ServiceTypesModule } from "../service-types/service-types.module";
 import { SettingsModule } from "../settings/settings.module";
 import { AuthModule } from "../auth/auth.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { PaymentsModule } from "../payments/payments.module";
 
 @Module({
-  imports: [AuthModule, ServiceTypesModule, SettingsModule, NotificationsModule],
+  imports: [AuthModule, ServiceTypesModule, SettingsModule, NotificationsModule, PaymentsModule],
   controllers: [BookingsController],
   providers: [BookingsService, DispatcherService],
   exports: [BookingsService, DispatcherService],

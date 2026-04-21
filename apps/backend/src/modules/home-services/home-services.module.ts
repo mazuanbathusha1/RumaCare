@@ -16,6 +16,8 @@ import { JwtAuthGuard, Roles } from "../../common/jwt-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
 import type { JwtPayload } from "../../common/jwt-auth.guard";
 import { AuthModule } from "../auth/auth.module";
+import { PaymentsModule } from "../payments/payments.module";
+import { PaymentsService } from "../payments/payments.service";
 
 class UpsertCategoryDto {
   @IsString()
@@ -70,7 +72,10 @@ class HomeServiceCategoriesController {
 
 @Controller("home-services/listings")
 class HomeServiceListingsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly payments: PaymentsService,
+  ) {}
 
   @Get()
   list(@Query("categoryId") categoryId: string) {
@@ -93,30 +98,25 @@ class HomeServiceListingsController {
       include: { homeServiceCategory: true },
     });
     const fee = listing.homeServiceCategory.workerFeePerView;
-    await this.prisma.$transaction([
-      this.prisma.homeServiceContactView.create({
-        data: {
-          homeServiceCategoryId: listing.homeServiceCategoryId,
-          customerId: user.sub,
-          workerId: listing.workerId,
-          feeCharged: fee,
-        },
-      }),
-      this.prisma.payment.create({
-        data: {
-          userId: listing.workerId,
-          kind: "WORKER_CONTACT_VIEW_FEE",
-          amount: fee,
-          note: `Contact-view fee for listing ${listing.id}`,
-        },
-      }),
-    ]);
+    await this.prisma.homeServiceContactView.create({
+      data: {
+        homeServiceCategoryId: listing.homeServiceCategoryId,
+        customerId: user.sub,
+        workerId: listing.workerId,
+        feeCharged: fee,
+      },
+    });
+    await this.payments.recordContactViewFee({
+      workerId: listing.workerId,
+      homeServiceCategoryId: listing.homeServiceCategoryId,
+      feeSen: fee,
+    });
     return { phone: listing.phone, workerId: listing.workerId, feeCharged: fee };
   }
 }
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PaymentsModule],
   controllers: [HomeServiceCategoriesController, HomeServiceListingsController],
 })
 export class HomeServicesModule {}
