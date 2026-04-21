@@ -105,6 +105,19 @@ model User {
   homeServiceViewsBy   HomeServiceContactView[] @relation("ContactViewsByCustomer")
   homeServiceViewsFor  HomeServiceContactView[] @relation("ContactViewsForWorker")
   payments             Payment[]
+  pushTokens           PushToken[]
+}
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model WorkerProfile {
